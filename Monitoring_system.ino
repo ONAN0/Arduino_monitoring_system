@@ -22,8 +22,8 @@ const int dymovySensor_2 = 49;
 const int ohrev = 50;
 const int cerpadlo = 52;
 
-const int senzorTeplomeru = A8;
-const int senzorVlhkomeru = A9;
+const int senzorTeplomeru = A7;
+//const int senzorVlhkomeru = A9;
 
 const int HRANICA_RIGHT = 90;
 const int HRANICA_UP = 180;
@@ -60,15 +60,15 @@ const int SIZE_Y = 5;
 const int SIZE_Z = 2;
 
 String menu[SIZE_X][SIZE_Y][SIZE_Z] = {
-  { { "NAN0", "" }, { "", "" }, { "", "" }, { "", "" }, { "", "" } },
+  { { "X", "" }, { "", "" }, { "", "" }, { "", "" }, { "", "" } },
   { { "Vsetko je", "" }, { "", "" }, { "", "" }, { "", "" }, { "", "" } },
-  { { "Stav alarmu", "" }, { "Dym1: ", "" }, { "Voda1: ", "" }, { "Dym2: ", "" }, { "Voda2: ", "" } },
+  { { "Stav alarmu", "" }, { "Dym1: ", "" }, { "Dym2: ", "" }, { "Voda1: ", "" }, { "Voda2: ", "" } },
   { { "Ohrev a", "" }, { "Vlhkost", "Hranica v %" }, { "Teplota", "Hranica v C" }, { "Delay cerpadla", "Delay v sek." }, { "Ver 2.0", "" } }
 };
 
 char* hlavneMenuDolnaLista[SIZE_X] = { "", "v poriadku", "", "cerpadlo" };
 
-const char* stavAlarmu[2] = { "Neaktivny", "Aktivny" };
+const char* stavAlarmu[2] = { "Aktivny", "Neaktivny" };
 
 const int velkostMenu[3] = { SIZE_X, SIZE_Y, SIZE_Z };
 int zoznamAdriesNaRatanie[3] = { 0, 0, 0 };
@@ -77,7 +77,7 @@ int zoznamAdriesNaPouzitie[3] = { 0, 0, 0 };
 int aktualnaPozicia = 0;
 int pocetMoznosti;
 
-const int maxHranicneHodnoty[3] = {101, 51, 4};
+const int maxHranicneHodnoty[3] = {101, 51, 7};
 int hranicneHodnoty[3] = {70, 25, 2};
 
 float napatieNaTeplomery;
@@ -113,12 +113,24 @@ void setup() {
 
 void loop() {
 
-  aktivneAlarmy[0] = HIGH;
-  aktivneAlarmy[1] = LOW;
-  aktivneAlarmy[2] = HIGH;
-  aktivneAlarmy[3] = HIGH;
+  aktivneAlarmy[0] = digitalRead(dymovySensor_1);
+  aktivneAlarmy[1] = digitalRead(dymovySensor_2);
+  aktivneAlarmy[2] = digitalRead(zaplavovySensor_1);
+  aktivneAlarmy[3] = digitalRead(zaplavovySensor_2);
 
-  if (aktivneAlarmy[0] == LOW || aktivneAlarmy[1] == LOW)
+  if (aktivneAlarmy[2] == LOW || aktivneAlarmy[3] == LOW)
+  {
+    digitalWrite(alarm_1, LOW);
+    digitalWrite(alarm_2, HIGH);
+    digitalWrite(alarm_3, LOW);
+    digitalWrite(cerpadlo, HIGH);
+    digitalWrite(ohrev, LOW);
+    menu[1][0][0] = "Zaznam. voda";
+    hlavneMenuDolnaLista[1] = "Cerpadlo zap.";
+    delay(200);
+    poslednyKrat = millis();
+  }
+  else if ((aktivneAlarmy[0] == LOW || aktivneAlarmy[1] == LOW) && (millis() - poslednyKrat >= (hranicneHodnoty[2]*1000)))
   {
     digitalWrite(alarm_1, HIGH);
     digitalWrite(alarm_2, LOW);
@@ -128,18 +140,6 @@ void loop() {
     menu[1][0][0] = "Zaznam. dym";
     hlavneMenuDolnaLista[1] = "Vsedko vypnute";
     delay(200);
-  }
-  else if (aktivneAlarmy[2] == LOW || aktivneAlarmy[3] == LOW)
-  {
-    digitalWrite(alarm_1, LOW);
-    digitalWrite(alarm_2, LOW);
-    digitalWrite(alarm_3, HIGH);
-    digitalWrite(cerpadlo, HIGH);
-    digitalWrite(ohrev, LOW);
-    menu[1][0][0] = "Zaznam. voda";
-    hlavneMenuDolnaLista[1] = "Cerpadlo zap.";
-    delay(200);
-    poslednyKrat = millis();
   }
   else
   {
@@ -298,7 +298,7 @@ void zmen_hranicne_hodnoty()
 
 void konvertuj_na_teplotu_a_vlhkost()
 {
-  napatieNaVlhkomery = analogRead(senzorVlhkomeru) * (5.0 / 1023.0);
+  //napatieNaVlhkomery = analogRead(senzorVlhkomeru) * (5.0 / 1023.0);
   napatieNaTeplomery = analogRead(senzorTeplomeru) * (5.0 / 1023.0);
 
   vlhkostPercenta = (napatieNaVlhkomery - 0.96) * (100 / 3.44);
